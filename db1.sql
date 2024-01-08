@@ -853,3 +853,121 @@ select * from member_table where id=1;
 update member_table set member_password='0000' where id=1;
 -- 7. 회원 삭제 또는 탈퇴 
 delete from member_table where id=3;
+
+-- 게시판 카테고리는 자유게시판, 공지사항, 가입인사 세가지가 있음.
+-- 카테고리 세가지 미리 저장
+insert into category_table(category_name) values ("자유게시판");
+insert into category_table(category_name) values ("공지사항");
+insert into category_table(category_name) values ("가입인사");
+desc category_table;
+
+-- 게시판 기능 
+select * from board_table;
+-- 1. 게시글 작성(파일첨부 x) 3개 이상 
+-- 1번 회원이 자유게시판 글 2개, 공지사항 글 1개 작성 
+insert into board_table(board_title, board_writer, board_contents, board_file_attached, member_id, category_id)
+	values ("안녕하세요", "aa", "안녕하세요", 0, 1, 1);
+insert into board_table(board_title, board_writer, board_contents, board_file_attached, member_id, category_id)
+	values ("처음뵙겠습니다.", "aa", "처음뵙겠습니다.", 0, 1, 1);
+insert into board_table(board_title, board_writer, board_contents, board_file_attached, member_id, category_id)
+	values ("공지사항", "aa", "공지사항", 0, 1, 2);
+-- 2번 회원이 자유게시판 글 3개 작성
+insert into board_table(board_title, board_writer, board_contents, board_file_attached, member_id, category_id)
+	values ("안녕하세요", "bb", "안녕하세요", 0, 2, 1);
+insert into board_table(board_title, board_writer, board_contents, board_file_attached, member_id, category_id)
+	values ("처음뵙겠습니다.", "bb", "처음뵙겠습니다.", 0, 2, 1);
+insert into board_table(board_title, board_writer, board_contents, board_file_attached, member_id, category_id)
+	values ("반갑습니다.", "bb", "공지사항", 0, 2, 1);
+-- 3번 회원이 가입인사 글 1개 작성 
+insert into board_table(board_title, board_writer, board_contents, board_file_attached, member_id, category_id)
+	values ("반갑습니다.", "cc", "처음 가입합니다.", 0, 3, 3);
+-- 1.1. 게시글 작성(파일첨부 o)
+select * from board_file_table;
+-- 2번 회원이 파일있는 자유게시판 글 2개 작성
+insert into board_table(board_title, board_writer, board_contents, board_file_attached, member_id, category_id)
+	values ("안녕하세요", "bb", "파일첨부1", 1, 2, 1);
+-- 첨부된 파일정보를 board_file_table에 저장
+-- 사용자가 첨부한 파일 이름: 파일1.jpg
+insert into board_file_table(original_file_name, stored_file_name, board_id)
+	values ("파일1.jpg", "124325135322_파일1.jpg", 8); -- 여기서 8은 게시글의 번호(id)
+insert into board_table(board_title, board_writer, board_contents, board_file_attached, member_id, category_id)
+	values ("처음뵙겠습니다.", "bb", "파일첨부2", 1, 2, 1);
+insert into board_file_table(original_file_name, stored_file_name, board_id)
+	values ("파일2.jpg", "435143123432_파일2.jpg", 9);
+-- 2. 게시글 목록 조회 
+-- 2.1 전체글 목록 조회
+select * from board_table;
+select id, board_title, board_writer, board_hits, board_created_at from board_table;
+-- 2.2 자유게시판 목록 조회 
+select * from board_table where category_id = 1;
+-- 2.3 공지사항 목록 조회 
+select * from board_table where category_id = 2;
+-- 2.4 목록 조회시 카테고리 이름도 함께 나오게 조회
+select * from board_table b, category_table c where b.category_id = c.id;
+-- 3. 2번 게시글 조회 (조회수 처리 필요함)
+update board_table set board_hits = board_hits + 1 where id = 2;
+select * from board_table where id = 2; 
+-- 3.1. 파일 첨부된 게시글 조회 (게시글 내용과 파일을 함께)
+update board_table set board_hits = board_hits + 1 where id = 8;
+-- 게시글 내용만 가져옴
+select * from board_table where id = 8;
+-- 해당 게시글에 첨부된 파일 정보 가져옴
+select * from board_file_table where board_id = 8;
+-- join
+select * from board_table b, board_file_table f where b.id = f.board_id and b.id = 8;
+-- 4. 1번 회원이 자유게시판에 첫번째로 작성한 게시글의 제목, 내용 수정
+select * from board_table where id = 1;
+update board_table set board_title = "안녕ㅎㅎㅎ", board_contents = "처음 뵙겠습니다." 
+	where id = 1;
+-- 5. 2번 회원이 자유게시판에 첫번째로 작성한 게시글 삭제 
+delete from board_table where id = 4;
+-- 7. 페이징 처리(한 페이지당 글 3개씩)
+select * from board_table order by id desc;
+-- limit 시작점, 조회 갯수
+-- 한 페이지당 글 5개씩
+select * from board_table order by id desc limit 0, 5; -- 9, 8, 7, 6, 5 1페이지
+select * from board_table order by id desc limit 5, 5; -- 3, 2, 1 2페이지
+select * from board_table order by id desc limit 10, 5; -- 3페이지
+-- 한페이지당 3개씩 출력하는 경우 전체 글 갯수가 20개라면 필요한 페이지 갯수는? 7개
+select count(*) from board_table;
+-- 7.1. 첫번째 페이지
+select * from board_table order by id desc limit 0, 3; -- 9, 8, 7 1페이지
+-- 7.2. 두번째 페이지
+select * from board_table order by id desc limit 3, 3; -- 6, 5, 3 2페이지
+-- 7.3. 세번째 페이지 
+select * from board_table order by id desc limit 6, 3; -- 1, 2 3페이지
+-- 8. 검색(글제목 기준)
+-- 8.1 검색결과를 오래된 순으로 조회 
+select * from board_table where board_title like "%반%" order by id asc;
+-- 8.2 검색결과를 조회수 내림차순으로 조회 
+select * from board_table where board_title like "%처%" order by board_hits desc;
+-- 8.3 검색결과 페이징 처리 
+select * from board_table where board_title like "%처%" order by board_hits desc limit 0, 3;
+
+-- 댓글 기능 
+-- 1. 댓글 작성 
+-- 1.1. 1번 회원이 1번 게시글에 댓글 작성 
+insert into comment_table(comment_writer, comment_contents, board_id, member_id)
+	values ( "aa", "반갑습니다", 1, 1);
+-- 1.2. 2번 회원이 1번 게시글에 댓글 작성 
+insert into comment_table(comment_writer, comment_contents, board_id, member_id)
+	values ( "bb", "환영합니다.", 1, 2);
+-- 2. 댓글 조회
+select * from board_table where id=1;
+select * from comment_table where board_id=1;
+select * from board_table b, comment_table c where b.id=c.board_id and b.id=1;
+-- 3. 댓글 좋아요 
+-- 3.1. 1번 회원이 2번 회원이 작성한 댓글에 좋아요 클릭
+-- 좋아요 했는지 체크
+select id from good_table comment_id=2 and member_id=1;
+-- 좋아요
+insert into good_table(comment_id, member_id) values (2, 1);
+-- 좋아요 취소
+delete from good_table where id=1;
+-- 3.2. 3번 회원이 2번 회원이 작성한 댓글에 좋아요 클릭 
+insert into good_table(comment_id, member_id) values (3, 2);
+select * from good_table;
+-- 4. 댓글 조회시 좋아요 갯수도 함께 조회
+select count(*) from good_table where comment_id = 2;
+select c.*, count(*) as "좋아요" from comment_table c, good_table g
+		where c.id = g.comment_id group by c.id;
